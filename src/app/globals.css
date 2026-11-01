@@ -1,26 +1,224 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-coal: var(--coal);
+  --color-ember: var(--ember);
+  --color-cream: var(--cream);
+  --color-background: var(--coal);
+  --color-foreground: var(--cream);
+  --font-display: var(--font-baskervville);
+  --font-sans: var(--font-mona);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
 }
 
-@media (prefers-color-scheme: dark) {
+:root {
+  /* Kent's red wall (faded), oxblood shadows, warm paper white */
+  --coal: #120504;
+  --ember: #ff5a1f;
+  --cream: #fff3e8;
+
+  --pad: 18px;
+  --header-h: 68px;
+  /* the page's gutters, kept clear of notches and the home bar (viewport-fit: cover) */
+  --pad-l: max(var(--pad), env(safe-area-inset-left));
+  --pad-r: max(var(--pad), env(safe-area-inset-right));
+  --pad-b: calc(var(--pad) + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --pad: 32px;
+    --header-h: 76px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (min-width: 1280px) {
+  :root {
+    --pad: 40px;
+  }
+}
+
+@layer base {
+  html {
+    @apply bg-coal font-sans text-cream;
+    color-scheme: dark;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply min-h-svh bg-coal text-cream;
+  }
+  ::selection {
+    background: var(--ember);
+    color: var(--cream);
+  }
+  :focus-visible {
+    outline: 1.5px solid var(--cream);
+    outline-offset: 3px;
+  }
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+/* Film grain over the photograph, Aldena style: a fine tile, printed rather than animated */
+.grain {
+  background-image: url("/hero/grain.png");
+  background-size: 128px 128px;
+  opacity: 0.17;
+}
+
+/* Intro start states. Only with JS and motion allowed, so nobody gets stuck on a blank frame. The intro
+   is done well inside 6s; if a script error stops it from ever running, everything shows itself then. */
+@keyframes failsafe-show {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes failsafe-ink {
+  to {
+    color: var(--cream);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .js [data-intro="fade"] {
+    opacity: 0;
+    animation: failsafe-show 0.6s ease 6s forwards;
+  }
+}
+
+/* With JS the smoke canvas takes over. Without JS, or when WebGL fails, the photograph stands in. */
+.js [data-photo-fallback] {
+  opacity: 0;
+}
+.js section:not([data-webgl]) [data-photo-fallback] {
+  animation: failsafe-show 0.6s ease 6s forwards;
+}
+[data-webgl="off"] [data-photo-fallback] {
+  opacity: 1;
+}
+[data-webgl="on"] [data-smoke] {
+  opacity: 1;
+}
+
+/* The name is drawn on a canvas (his head cut out over it, light under the cursor). The real <h1> stays
+   for readers and search, and only shows itself if the canvas can't draw, or never got the chance. */
+.js [data-title-text],
+.js [data-title-text]:not([data-canvas="off"])::selection {
+  color: transparent;
+}
+.js [data-title-text][data-canvas="off"] {
+  color: var(--cream);
+}
+.js [data-title-text]:not([data-canvas]) {
+  animation: failsafe-ink 0s 6s forwards;
+}
+
+/* Aldena's link hover: letters roll up one after another, each one's copy (a text-shadow a line below)
+   rolling in behind it */
+.roll {
+  display: inline-flex;
+  height: 1.1em;
+  overflow: hidden;
+  line-height: 1.1em;
+  vertical-align: top;
+}
+.roll > span {
+  display: block;
+  white-space: pre;
+  text-shadow: 0 1.1em 0 currentColor;
+  transition: transform 0.55s cubic-bezier(0.65, 0, 0.35, 1) calc(var(--i) * 0.025s);
+}
+.roll-host:hover .roll > span,
+.roll-host:focus-visible .roll > span {
+  transform: translateY(-1.1em);
+}
+
+/* The dark glass the cards are made of: a deep red tint with a hairline edge, the photo behind blurred and
+   more saturated, and in Chromium also bent a little through the #liquid filter (flagged in the layout),
+   like looking through poured glass */
+@layer components {
+  .glass {
+    border: 1px solid color-mix(in oklab, var(--cream) 12%, transparent);
+    background: rgb(52 8 5 / 0.55);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
+  }
+  .liquid .glass {
+    backdrop-filter: blur(8px) url(#liquid) saturate(150%);
+  }
+}
+
+/* The podcast preview's frame drifts slowly, like a clip on loop */
+@keyframes drift {
+  from {
+    transform: scale(1.02);
+  }
+  to {
+    transform: scale(1.12) translate(-2%, -1.5%);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .drift {
+    animation: drift 9s ease-in-out infinite alternate;
+  }
+}
+
+/* The small menu grows up out of the burger, then its rows rise in, one after another */
+.menu-pop {
+  clip-path: inset(0 round 6px);
+  transition:
+    clip-path 0.55s var(--ease-out-expo),
+    transform 0.55s var(--ease-out-expo),
+    opacity 0.3s ease;
+}
+.menu-pop[data-starting-style],
+.menu-pop[data-ending-style] {
+  clip-path: inset(100% 0 0 0 round 6px);
+  transform: translateY(8px);
+  opacity: 0;
+}
+.menu-pop[data-ending-style] {
+  transition-duration: 0.3s;
+}
+.menu-item {
+  transition:
+    transform 0.6s var(--ease-out-expo) calc(0.06s + var(--i) * 0.04s),
+    opacity 0.4s ease calc(0.06s + var(--i) * 0.04s);
+}
+.menu-pop[data-starting-style] .menu-item {
+  transform: translateY(14px);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roll > span,
+  .menu-pop,
+  .menu-item {
+    transition: opacity 0.2s;
+  }
+  .roll-host:hover .roll > span,
+  .roll-host:focus-visible .roll > span {
+    transform: none;
+  }
+  .menu-pop[data-starting-style],
+  .menu-pop[data-ending-style] {
+    clip-path: inset(0 round 6px);
+    transform: none;
+  }
+  .menu-pop[data-starting-style] .menu-item {
+    transform: none;
+  }
 }
